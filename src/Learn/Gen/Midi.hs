@@ -12,6 +12,7 @@ data Exercise = Voicing {
    -- individual notes for a scale.  Notes within a chord should be in
    -- ascending order.
    | Invalid
+   deriving (Show, Eq)
 
 deriveJSON defaultOptions {
    sumEncoding = TaggedObject {

@@ -23,10 +23,14 @@ module Learn.TimeLearn.Internal (
 
    getNexts,
    getNew,
-   update
+   update,
+
+   -- Internal use
+   getAll
 ) where
 
 import Control.Exception (Exception, throwIO)
+import qualified Data.ByteString.Lazy as L
 import Data.Convertible (Convertible)
 import Data.Foldable (for_)
 import Data.Maybe (listToMaybe)
@@ -44,7 +48,7 @@ data TimeLearn = TimeLearn {
 data Problem = Problem {
    pId :: Int,
    pQuestion :: String,
-   pAnswer :: String,
+   pAnswer :: L.ByteString,
    pNext :: POSIXTime,
    pInterval :: NominalDiffTime }
    deriving Show
@@ -129,6 +133,19 @@ getNew TimeLearn{..} = do
          pNext = now,
          pInterval = 5.0 }
       toProblem _ _ = error "Unexpected SQL result"
+
+-- |Retrieve all problems from the database.
+getAll :: TimeLearn -> IO [(Int, String, L.ByteString)]
+getAll TimeLearn{..} = do
+   st <- prepare tlConn $ "SELECT id, question, answer " ++
+      "FROM probs " ++
+      "ORDER BY id"
+   _ <- execute st []
+   rows <- fetchAllRows' st
+   return $ map toProblem rows
+   where
+      toProblem [pId, qn, ans] = (fromSql pId, fromSql qn, fromSql ans)
+      toProblem _ = error "Unexpected SQL result"
 
 -- |Update a problem, based on a learning factor.  The scale is 1..4,
 -- with 1 being totally incorrect, and 4 being totally correct.
