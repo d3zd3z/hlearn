@@ -21,6 +21,10 @@ description:         Please see the README on Github at <https://github.com/gith
 
 dependencies:
 - base >= 4.7 && < 5
+- convertible >= 1.1 && < 1.2
+- HDBC >= 2.4 && < 2.5
+- HDBC-sqlite3 >= 2.3 && < 2.4
+- time >= 1.8 && < 1.9
 
 library:
   source-dirs: src
@@ -35,10 +39,6 @@ executables:
     - -with-rtsopts=-N
     dependencies:
     - stenome
-    - convertible >= 1.1 && < 1.2
-    - HDBC >= 2.4 && < 2.5
-    - HDBC-sqlite3 >= 2.3 && < 2.4
-    - time >= 1.8 && < 1.9
 
 tests:
   stenome-test:
