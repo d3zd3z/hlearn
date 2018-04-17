@@ -20,4 +20,9 @@ main = do
       for_ [1 :: Int .. 100] $ \num -> do
          TL.addProblem pop ("Question: " ++ show num)
             ("Answer: " ++ show num)
+   nx <- TL.getNexts t2 2
+   putStrLn $ "Nexts: " ++ show nx
+   case nx of
+      (p : _) -> TL.update t2 p 4
+      _ -> return ()
    TL.close t2

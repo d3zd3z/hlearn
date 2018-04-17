@@ -18,16 +18,22 @@ module Learn.TimeLearn (
    close,
    Populator,
    populate,
-   addProblem
+   addProblem,
+
+   getNexts,
+   getNew,
+   update
 ) where
 
 import Control.Exception (Exception, throwIO)
 import Data.Convertible (Convertible)
 import Data.Foldable (for_)
+import Data.Maybe (listToMaybe)
 import Data.Time.Clock
 import Data.Time.Clock.POSIX
 import Database.HDBC.Sqlite3 (connectSqlite3)
 import Database.HDBC
+import System.Random (randomR, newStdGen)
 
 data TimeLearn = TimeLearn {
    tlConn :: ConnWrapper,
@@ -40,6 +46,7 @@ data Problem = Problem {
    pAnswer :: String,
    pNext :: POSIXTime,
    pInterval :: NominalDiffTime }
+   deriving Show
 
 -- When populating the database, the `Populator` restricts the update
 -- operation to something within a single transaction.
@@ -48,6 +55,7 @@ newtype Populator = Populator TimeLearn
 data TimeLearnException
    = MalformedResult
    | InvalidSchemaVersion String String
+   | InvalidFactor Int
    deriving Show
 instance Exception TimeLearnException
 
@@ -72,6 +80,79 @@ open path = do
    kind <- query1 conn "SELECT value FROM config WHERE key = 'kind'" []
 
    return $ TimeLearn { tlConn = ConnWrapper conn, kind = kind }
+
+-- |Query for 'n' upcoming problems that have expired.  This will
+-- return list of problems, with element 0 being the next problem that
+-- should be asked.
+getNexts :: TimeLearn -> Int -> IO [Problem]
+getNexts tl@TimeLearn{..} count = do
+   now <- getPOSIXTime
+   st <- prepare tlConn $ "SELECT id, question, answer, next, interval " ++
+      "FROM probs JOIN learning " ++
+      "WHERE probs.id = learning.probid " ++
+      "  AND next <= ? " ++
+      "ORDER BY next " ++
+      "LIMIT ?"
+   _ <- execute st [toSql (realToFrac now :: Double), toSql count]
+   rows <- fetchAllRows' st
+   case map toProblem rows of
+      [] -> (maybe [] (:[])) <$> getNew tl
+      nexts -> return nexts
+   where
+      toProblem [pId, qn, ans, pNext, interval] = Problem {
+         pId = fromSql pId,
+         pQuestion = fromSql qn,
+         pAnswer = fromSql ans,
+         pNext = fromRational $ fromSql pNext,
+         pInterval = fromRational $ fromSql interval }
+      toProblem _ = error "Unexpected SQL result"
+
+-- |Get a problem that hasn't started being learned.  The interval and
+-- next will be set appropriately for a new problem.
+getNew :: TimeLearn -> IO (Maybe Problem)
+getNew TimeLearn{..} = do
+   now <- getPOSIXTime
+   st <- prepare tlConn $ "SELECT id, question, answer " ++
+      "FROM probs " ++
+      "WHERE ID NOT IN (SELECT probid FROM learning) " ++
+      "ORDER BY id " ++
+      "LIMIT 1"
+   _ <- execute st []
+   rows <- fetchAllRows' st
+   return $ listToMaybe $ map (toProblem now) rows
+   where
+      toProblem now [pId, pQuestion, pAnswer] = Problem {
+         pId = fromSql pId,
+         pQuestion = fromSql pQuestion,
+         pAnswer = fromSql pAnswer,
+         pNext = now,
+         pInterval = 5.0 }
+      toProblem _ _ = error "Unexpected SQL result"
+
+-- |Update a problem, based on a learning factor.  The scale is 1..4,
+-- with 1 being totally incorrect, and 4 being totally correct.
+update :: TimeLearn -> Problem -> Int -> IO ()
+update TimeLearn{..} prob factor = do
+   adjust <- case factor of
+      1 -> return 0.25
+      2 -> return 0.9
+      3 -> return 1.2
+      4 -> return 2.2
+      _ -> throwIO $ InvalidFactor factor
+   now <- getPOSIXTime
+   rng <- newStdGen
+   let fudge = realToFrac $ fst $ randomR (0.75 :: Double, 1.25) rng
+   let interval = ((pInterval prob) * adjust * fudge) `max` 5.0
+   let next = now + (pInterval prob)
+
+   _ <- run tlConn "INSERT OR REPLACE INTO learning VALUES (?, ?, ?)"
+      [toSql $ pId prob, toSql (realToFrac next :: Double),
+         toSql (realToFrac interval :: Double)]
+   _ <- run tlConn "INSERT INTO log VALUES (?, ?, ?)"
+      [toSql (realToFrac now :: Double),
+         toSql $ pId prob,
+         toSql factor]
+   commit tlConn
 
 -- Run the action given the populator, which can be used to add items.
 populate :: TimeLearn -> (Populator -> IO ()) -> IO ()
