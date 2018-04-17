@@ -1,9 +1,9 @@
 name:                stenome
 version:             0.1.0.0
-github:              "githubuser/stenome"
+github:              "d3zd3z/stenome"
 license:             BSD3
-author:              "Author name here"
-maintainer:          "example@example.com"
+author:              "David Brown"
+maintainer:          "davidb@davidb.org"
 copyright:           "2018 Author name here"
 
 extra-source-files:
@@ -35,6 +35,10 @@ executables:
     - -with-rtsopts=-N
     dependencies:
     - stenome
+    - convertible >= 1.1 && < 1.2
+    - HDBC >= 2.4 && < 2.5
+    - HDBC-sqlite3 >= 2.3 && < 2.4
+    - time >= 1.8 && < 1.9
 
 tests:
   stenome-test:
