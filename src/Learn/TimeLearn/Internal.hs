@@ -11,7 +11,7 @@
 -- This module is intended to be imported qualified.
 
 module Learn.TimeLearn.Internal (
-   TimeLearn, kind,
+   TimeLearn(..),
    Problem(..),
    TimeLearnException(..),
    create,
@@ -26,7 +26,8 @@ module Learn.TimeLearn.Internal (
    update,
 
    -- Internal use
-   getAll
+   getAll,
+   query1
 ) where
 
 import Control.Exception (Exception, throwIO)

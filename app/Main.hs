@@ -11,6 +11,7 @@ import qualified Data.ByteString.Lazy.Char8 as LC
 import Data.Foldable (for_)
 import qualified Learn.TimeLearn as TL
 import Learn.TimeLearn.SanityCheck
+import Learn.TimeLearn.Stats
 import System.Environment (getArgs)
 
 main :: IO ()
@@ -21,6 +22,7 @@ main = do
 doCommand :: [String] -> IO ()
 doCommand ["check", dbFile] = doCheck dbFile
 doCommand ["update", dbFile] = doUpdate dbFile
+doCommand ["stats", dbFile] = doStats dbFile
 doCommand _ = putStrLn $ "Unknown usage"
 
 doCheck :: String -> IO ()
@@ -41,6 +43,12 @@ doUpdate dbFile = do
                for_ probs $ \(question, answer) -> do
                   TL.addProblem pop question answer)
          res
+
+doStats :: String -> IO ()
+doStats dbFile = do
+   bracket (TL.open dbFile) TL.close $ \tl -> do
+      counts <- getStats tl
+      putStrLn $ prettyStats counts 65.2
 
 bmain :: IO ()
 bmain = do
