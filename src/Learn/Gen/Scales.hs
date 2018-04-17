@@ -60,8 +60,12 @@ practice = [
       name = "major 3rds rev",
       intervals = "WWHWWWH",
       hands = bothHandsProgressive,
-      style = style3Upr }
-      ]
+      style = style3Upr },
+   Practice {
+      name = "whole-half 3rds",
+      intervals = "WHWHWHWH",
+      hands = bothHands,
+      style = style3Up } ]
 
 -- Convert a given Practice into a series of question and answer pairs
 genScales :: Practice -> [(String, L.ByteString)]

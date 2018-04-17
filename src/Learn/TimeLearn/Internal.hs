@@ -177,7 +177,7 @@ populate :: TimeLearn -> (Populator -> IO ()) -> IO ()
 populate tl@TimeLearn{..} act = do
    withTransaction tlConn (\_ -> act $ Populator tl)
 
-addProblem :: Populator -> String -> String -> IO ()
+addProblem :: Populator -> String -> L.ByteString -> IO ()
 addProblem (Populator TimeLearn{..}) question answer = do
    _ <- run tlConn "INSERT INTO probs (question, answer) VALUES (?, ?)"
       [toSql question, toSql answer]
