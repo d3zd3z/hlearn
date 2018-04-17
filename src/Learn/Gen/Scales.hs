@@ -48,13 +48,8 @@ practice = [
       style = styleUpDown },
    Practice {
       name = "sym-dom (half-whole)",
-      intervals = "HWHWHWHH",
+      intervals = "HWHWHWHW",
       hands = bothHands,
-      style = styleUpDown },
-   Practice {
-      name = "diminished (whole-half)",
-      intervals = "WHWHWHWH",
-      hands = bothHandsProgressive,
       style = styleUpDown },
    Practice {
       name = "major 3rds",
@@ -76,8 +71,17 @@ genScales Practice{..} = do
    let getNote = genIntervals (fromJust $ parseNote key) intervals
    let scale = mkScale (length intervals) (octaves style) (extra style)
    let notes = map ((:[]) . getNote) (liftM2 (+) scale (pattern style))
-   let qn = show hand ++ "-scale " ++ key ++ " " ++ name
-   return $ (qn, encodeChords notes)
+   let notes' = notes ++ [[getNote 0]]
+   let qn = textHand hand ++ "-scale " ++ key ++ " " ++ name
+   return $ (qn, encodeChords $ adjustHands hand notes')
+
+-- Adjust the notes according to the hands in the exercise.
+adjustHands :: Hands -> [[Int]] -> [[Int]]
+adjustHands H2 notes = map (double) notes
+   where
+      double [a] = [a, a + 12]
+      double _ = error "Invalid number of notes in scale"
+adjustHands _ notes = notes
 
 bases :: [String]
 bases = [ "C", "G", "D", "A", "E", "B", "F♯", "G♭", "D♭", "A♭", "E♭", "B♭", "F" ]
@@ -138,7 +142,7 @@ encodeChords ch = A.encode $ Voicing { vChords = ch }
 -- the top, and back down, using 'oct' octaves.
 mkScale :: Int -> Int -> Int -> [Int]
 mkScale notes oct extra =
-   [0 .. notes * oct - 1] ++ [notes * oct, notes * oct - 1 .. -extra]
+   [0 .. notes * oct - 1] ++ [notes * oct, notes * oct - 1 .. 1-extra]
 
 -- Given an interval string, generate the given number of octaves of
 -- notes with index '0' being at base.
@@ -180,6 +184,11 @@ intervalName ch = error $ "Unsupported interval: " ++ show ch
 
 data Hands = RH | LH | H2
    deriving Show
+
+textHand :: Hands -> String
+textHand RH = "RH"
+textHand LH = "LH"
+textHand H2 = "2H"
 
 -- |Attempt to decode a note as a Midi note.  There isn't a worry
 -- about the particular octave, just a pitch value within range.
