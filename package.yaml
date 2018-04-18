@@ -29,6 +29,8 @@ dependencies:
 - HDBC-sqlite3 >= 2.3 && < 2.4
 - PortMidi >= 0.1 && < 0.2
 - random >= 1.1 && < 1.2
+- text >= 1.2 && < 1.3
+- text-metrics >= 0.3 && < 0.4
 - time >= 1.8 && < 1.9
 
 library:

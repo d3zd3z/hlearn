@@ -1,6 +1,8 @@
 {-# LANGUAGE TemplateHaskell #-}
 
-module Learn.Gen.Midi where
+module Learn.Gen.Midi (
+   Exercise(..)
+) where
 
 import Data.Aeson.TH
 import Data.Char (toLower)

@@ -9,6 +9,7 @@ module Main where
 import Control.Exception (bracket)
 import qualified Data.ByteString.Lazy.Char8 as LC
 import Data.Foldable (for_)
+import Learn.Learn
 import qualified Learn.TimeLearn as TL
 import Learn.TimeLearn.SanityCheck
 import Learn.TimeLearn.Stats
@@ -23,6 +24,7 @@ doCommand :: [String] -> IO ()
 doCommand ["check", dbFile] = doCheck dbFile
 doCommand ["update", dbFile] = doUpdate dbFile
 doCommand ["stats", dbFile] = doStats dbFile
+doCommand ["run", dbFile] = doRun dbFile
 doCommand _ = putStrLn $ "Unknown usage"
 
 doCheck :: String -> IO ()
@@ -49,6 +51,11 @@ doStats dbFile = do
    bracket (TL.open dbFile) TL.close $ \tl -> do
       counts <- getStats tl
       putStrLn $ prettyStats counts 65.2
+
+doRun :: String -> IO ()
+doRun dbFile = do
+   bracket (TL.open dbFile) TL.close $ \tl -> do
+      learn tl
 
 bmain :: IO ()
 bmain = do
