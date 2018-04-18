@@ -121,19 +121,27 @@ mustCorrect getMidi correct = do
 -- as the exercise, so we return the minimum distance with the input
 -- adjusted by up to four octaves.
 
+-- |Compare two chord sequences, returning the "distance" between
+-- them, with 0 being a perfect match.  The match is tried across
+-- multiple octaves and the match with the shortest distance is used.
 chordsCompare :: [[Int]] -> [[Int]] -> Int
 chordsCompare a b =
    foldl1 min $ map (\oct -> chordsCompareSingle a (map (map (+ oct)) b)) (manyOctaves 5)
 
+-- |Compare two chord sequences within a single octave.
 chordsCompareSingle :: [[Int]] -> [[Int]] -> Int
 chordsCompareSingle a b = levenshtein (chordsToText a) (chordsToText b)
 
+-- |Generate a list of octave maps by octave: [0, 12, -12, 24, -24,
+-- ...] for the given number of octaves.
 manyOctaves :: Int -> [Int]
 manyOctaves oct = map (* 12) $ 0 : interleave [1 .. oct] [-1, -2 .. -oct]
 
--- |Interleave to lists
+-- |Interleave two lists
 interleave :: [a] -> [a] -> [a]
 interleave xs ys = concat (transpose [xs, ys])
 
+-- |Convert a chord list (nested list of midi note values) into a
+-- unicode sequence so that we can use a textual comparison function.
 chordsToText :: [[Int]] -> Text
 chordsToText = T.pack . intercalate "," .  map (map $ chr . (+ 256))
