@@ -4,12 +4,14 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 
-module Learn.Learn where
+module Learn.Learn (
+   learn
+) where
 
 import Control.Exception (Exception, throwIO)
+import Control.Monad.Reader
 import Data.Aeson (decode)
 import Data.Char (chr)
-import Data.Foldable (for_)
 import Data.List (intercalate, transpose)
 import Data.Maybe (fromJust)
 import qualified Data.Text as T
@@ -45,28 +47,40 @@ getAsker tl = do
       "midi" -> return midiAsker
       k -> throwIO $ UnknownKind k
 
-data AskResult =
-   StopAsking
-   | Answered Int
-   deriving Show
+-- |Give the result of asking a question, as either an Int 1-4 (4
+-- being perfect), or Nothing to abort the process.
+type AskResult = Maybe Int
 
 learn :: TimeLearn -> IO ()
 learn tl = do
    ProblemAsker{..} <- getAsker tl
    withAsker $ \askState -> do
-      nexts <- getNexts tl 2
-      case nexts of
-         [] -> putStrLn "No more problems to learn"
-         (prob:probs) -> do
-            counts <- getStats tl
-            let pretty = prettyStats counts (realToFrac $ pInterval prob)
-            putStrLn $ "\n" ++ pretty
-            putStrLn $ "   Q: " ++ (pQuestion prob)
-            for_ probs $ \p2 -> do
-               putStrLn $ "   n: " ++ (pQuestion p2)
+      let loop = do
+            nexts <- getNexts tl 2
+            case nexts of
+               [] -> putStrLn "No more problems to learn"
+               allProbs@(prob:_) -> do
+                  prompt <- genPrompt tl allProbs
+                  putStrLn prompt
 
-            user <- askProblem askState prob
-            putStrLn $ "You played: " ++ show user
+                  user <- askProblem askState prob
+                  case user of
+                     Nothing -> return ()
+                     Just x -> do
+                        update tl prob x
+                        loop
+      loop
+
+-- Given a problem, possible more problems, and the current state,
+-- generate a textual message to prompt for the question.
+genPrompt :: TimeLearn -> [Problem] -> IO String
+genPrompt tl (prob:probs) = do
+   counts <- getStats tl
+   let pretty = prettyStats counts (realToFrac $ pInterval prob)
+   return $ "\n" ++ pretty ++
+      "\n   Q: " ++ (pQuestion prob) ++ "\n" ++
+      concatMap (\p2 -> "   n: " ++ (pQuestion p2) ++ "\n") probs
+genPrompt _ [] = undefined
 
 -- Midi based problems
 midiAsker :: ProblemAsker
@@ -74,40 +88,67 @@ midiAsker = ProblemAsker {
    withAsker = withMidi,
    askProblem = askMidi }
 
-askMidi :: IO [(Int, Int)] -> Problem -> IO AskResult
-askMidi getMidi prob = do
-   putStr $ "\nPlay exercise: "
-   hFlush stdout
-   notes <- recordExercise getMidi
-   putStrLn $ "\nNotes: " ++ show notes
-   case notes of
-      [[_]] -> return StopAsking
-      _ -> checkMidi getMidi prob notes
+-- State used to ask a single question
+data AskState = AskState {
+   sGetMidi :: IO [(Int, Int)],
+   sProblem :: Problem,
+   sCorrect :: [[Int]] -> Int }
 
-checkMidi :: IO [(Int, Int)] -> Problem -> [[Int]] -> IO AskResult
-checkMidi getMidi prob notes = do
+runAsker :: IO [(Int, Int)] -> Problem -> AskIO a -> IO a
+runAsker getMidi prob asker =
    let correct = case fromJust $ decode (pAnswer prob) of
          Voicing{..} -> vChords
-         _ -> error "Invalid answer in problem"
-   let diffs = chordsCompare correct notes
-   putStrLn $ "There were " ++ show diffs ++ " differences"
-   if diffs == 0
-      then return $ Answered 4
-      else mustCorrect getMidi correct
+         _ -> error "Invalid answer in problem" in
+   runReaderT asker AskState {
+      sGetMidi = getMidi,
+      sProblem = prob,
+      sCorrect = chordsCompare correct }
 
-mustCorrect :: IO [(Int, Int)] -> [[Int]] -> IO AskResult
-mustCorrect getMidi correct = do
-   putStr $ "\nPlease play correctly: "
-   hFlush stdout
-   notes <- recordExercise getMidi
+type AskIO a = ReaderT AskState IO a
+
+type Getter = IO [(Int, Int)]
+
+askMidi :: Getter -> Problem -> IO AskResult
+askMidi getMidi prob =
+   runAsker getMidi prob drill
+
+drill :: AskIO AskResult
+drill = do
+   res <- getUser "Play exercise: "
+   case res of
+      Just x
+         | x == 4 -> return res
+         | otherwise -> require res
+      Nothing -> return Nothing
+
+-- Ask the problem repeatedly, until the user plays it correctly.
+require :: AskResult -> AskIO AskResult
+require res = do
+   r2 <- getUser "Play correctly: "
+   case r2 of
+      Nothing -> return Nothing
+      Just x
+         | x == 4 -> return res
+         | otherwise -> require res
+
+-- Emit a given prompt, record a session, and return its correctness.
+getUser :: String -> AskIO AskResult
+getUser prompt = do
+   lift $ putStr prompt
+   lift $ hFlush stdout
+   getMidi <- asks sGetMidi
+   notes <- lift $ recordExercise getMidi
    case notes of
-      [[_]] -> return StopAsking
+      [[_]] -> do
+         lift $ putStrLn "Exiting"
+         return Nothing
       _ -> do
-         let diffs = chordsCompare correct notes
-         putStrLn $ "There were " ++ show diffs ++ " differences"
+         correct <- asks sCorrect
+         let diffs = correct notes
+         lift $ putStrLn $ "There were " ++ show diffs ++ " differences"
          if diffs == 0
-            then return $ Answered 4
-            else mustCorrect getMidi correct
+            then return $ Just 4
+            else return $ Just 1
 
 -- To compare the user's notes and the input notes, we want to compute
 -- the Levenshtein distance.  The 'text-metrics' package has a nice
