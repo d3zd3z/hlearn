@@ -77,7 +77,7 @@ prettyBucket total (name, count) =
 
 stars :: Int -> Int -> String
 stars this total =
-   let starCount = (65 * this) `div` total in
+   let starCount = if total > 0 then (65 * this) `div` total else 0 in
    replicate starCount '*'
 
 -- For statistics we match up short bucket names with time intervals.
