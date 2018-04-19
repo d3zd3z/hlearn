@@ -115,6 +115,7 @@ getNexts tl@TimeLearn{..} count = do
 
 -- |Get a problem that hasn't started being learned.  The interval and
 -- next will be set appropriately for a new problem.
+-- Will also append " (NEW)" to the question text.
 getNew :: TimeLearn -> IO (Maybe Problem)
 getNew TimeLearn{..} = do
    now <- getPOSIXTime
@@ -129,7 +130,7 @@ getNew TimeLearn{..} = do
    where
       toProblem now [pId, pQuestion, pAnswer] = Problem {
          pId = fromSql pId,
-         pQuestion = fromSql pQuestion,
+         pQuestion = fromSql pQuestion ++ " (NEW)",
          pAnswer = fromSql pAnswer,
          pNext = now,
          pInterval = 5.0 }
