@@ -1,6 +1,11 @@
+-- Copyright (C) 2018 David Brown
+--
+-- SPDX-License-Identifier: Apache-2.0
+--
+-- |A midi exercise.
+
 {-# LANGUAGE RecordWildCards #-}
 
--- A midi exercise.
 
 module Sound.Midi.Exercise (
    withMidi,

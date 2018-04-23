@@ -1,3 +1,9 @@
+-- Copyright (C) 2018 David Brown
+--
+-- SPDX-License-Identifier: Apache-2.0
+
+-- |Various types of midi problems with conversion to/from JSON
+
 {-# LANGUAGE TemplateHaskell #-}
 
 module Learn.Gen.Midi (

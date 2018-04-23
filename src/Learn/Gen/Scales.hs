@@ -1,3 +1,11 @@
+-- Copyright (C) 2018 David Brown
+--
+-- SPDX-License-Identifier: Apache-2.0
+--
+-- |Scale generators.
+--
+-- Generate all of the notes for various scale exercises.
+
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 

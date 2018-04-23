@@ -1,3 +1,7 @@
+-- Copyright (C) 2018 David Brown
+--
+-- SPDX-License-Identifier: Apache-2.0
+--
 -- |Learning statistics
 
 {-# LANGUAGE RecordWildCards #-}
