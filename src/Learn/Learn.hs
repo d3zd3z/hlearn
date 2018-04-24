@@ -82,8 +82,8 @@ genPrompt tl (prob:probs) = do
    counts <- getStats tl
    let pretty = prettyStats counts (realToFrac $ pInterval prob)
    return $ "\n" ++ pretty ++
-      "\n   Q: " ++ (pQuestion prob) ++ "\n" ++
-      concatMap (\p2 -> "   n: " ++ (pQuestion p2) ++ "\n") probs
+      "\nPlay: " ++ (pQuestion prob) ++ "\n" ++
+      concatMap (\p2 -> "      " ++ (pQuestion p2) ++ "\n") probs
 genPrompt _ [] = undefined
 
 -- Midi based problems
