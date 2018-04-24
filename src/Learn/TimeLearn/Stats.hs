@@ -119,9 +119,9 @@ timeUnits = [
 -- |Produce a friendly human readable representation of a time in
 -- seconds.
 humanize :: Double -> String
-humanize = rep 1.0 timeUnits
+humanize = rep timeUnits
    where
-      rep soFar ((name, duration):xs) time
-         | time < soFar * duration = printf "%.1f %s" time name
-         | otherwise               = rep (soFar * duration) xs (time / duration)
-      rep _ [] _ = "INF"
+      rep ((name, duration):xs) time
+         | time < duration = printf "%.1f %s" time name
+         | otherwise               = rep xs (time / duration)
+      rep [] _ = "INF"
