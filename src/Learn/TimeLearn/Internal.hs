@@ -163,7 +163,7 @@ update TimeLearn{..} prob factor = do
    rng <- newStdGen
    let fudge = realToFrac $ fst $ randomR (0.75 :: Double, 1.25) rng
    let interval = ((pInterval prob) * adjust * fudge) `max` 5.0
-   let next = now + (pInterval prob)
+   let next = now + interval
 
    _ <- run tlConn "INSERT OR REPLACE INTO learning VALUES (?, ?, ?)"
       [toSql $ pId prob, toSql (realToFrac next :: Double),
