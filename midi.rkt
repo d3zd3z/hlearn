@@ -1,7 +1,7 @@
 #lang racket
 
 (provide with-midi-in
-	 read-exercise)
+         read-exercise)
 
 ;;; This uses the rtmidi package to retrieve a lesson.
 ;;; This library seems to group messages by packet, but I'm not sure
@@ -31,7 +31,7 @@
     void
     (lambda ()
       (parameterize ([midi-in in])
-	(action)))
+        (action)))
     (lambda ()
       (close-midi-in in))))
 
@@ -59,19 +59,19 @@
   (display "wait...")
   (flush-output)
   (let loop (
-	     ;; Last time we saw a message.  #f means none is seen, so no
-	     ;; timeout.
-	     [last-time (current-subseconds)]
+             ;; Last time we saw a message.  #f means none is seen, so no
+             ;; timeout.
+             [last-time (current-subseconds)]
 
-	     ;; Notes that we've seen down.  We won't finish the exercise until
-	     ;; everything that went down has been released.
-	     [down-notes (seteqv)]
+             ;; Notes that we've seen down.  We won't finish the exercise until
+             ;; everything that went down has been released.
+             [down-notes (seteqv)]
 
-	     ;; All the notes recorded so far, in reverse order.
-	     [captured null]
-	     
-	     ;; An infinite stream for the cursor.
-	     [cursor (make-cursor)])
+             ;; All the notes recorded so far, in reverse order.
+             [captured null]
+
+             ;; An infinite stream for the cursor.
+             [cursor (make-cursor)])
 
     ;; Check the timer, and continue waiting if we still have time
     ;; remaining.  event? is a boolean that indicates whether this is
@@ -79,30 +79,30 @@
     (define (timeout-continue down-notes new-captured event?)
       (define now (current-subseconds))
       (define new-timeout
-	(if event? now last-time))
+        (if event? now last-time))
       (cond
-	;; The finish condition.
-	[(and (set-empty? down-notes)
-	      (not (null? captured))
-	      (> now (+ last-time exercise-time)))
-	 (displayln "done.")
-	 (flush-output)
-	 (group-chords (reverse new-captured))]
+        ;; The finish condition.
+        [(and (set-empty? down-notes)
+              (not (null? captured))
+              (> now (+ last-time exercise-time)))
+         (displayln "done.")
+         (flush-output)
+         (group-chords (reverse new-captured))]
 
-	;; Check for this being the first notes, and start the capture
-	;; message.
-	[(and (null? captured)
-	      (not (null? new-captured)))
-	 (display "recording...")
-	 (flush-output)
-	 (loop new-timeout down-notes new-captured cursor)]
+        ;; Check for this being the first notes, and start the capture
+        ;; message.
+        [(and (null? captured)
+              (not (null? new-captured)))
+         (display "recording...")
+         (flush-output)
+         (loop new-timeout down-notes new-captured cursor)]
 
-	;; Otherwise, just continue waiting.
-	[else
-	  (define cursor2
-	    (if event? (update-cursor cursor)
-	      cursor))
-	  (loop new-timeout down-notes new-captured cursor2)]))
+        ;; Otherwise, just continue waiting.
+        [else
+          (define cursor2
+            (if event? (update-cursor cursor)
+              cursor))
+          (loop new-timeout down-notes new-captured cursor2)]))
 
     ;; Read from the midi device, with a timeout
     (match (sync/timeout 0.250 (midi-in))
@@ -114,8 +114,8 @@
        ;; Fortunately, it seems to return the notes in a timely
        ;; manner, so we'll just record our own timestamps.
        (timeout-continue (set-add down-notes note)
-			 (cons (cons (current-subseconds) note) captured)
-			 #t)]
+                         (cons (cons (current-subseconds) note) captured)
+                         #t)]
 
       ;; Note up removes the note from those that are pressed.
       [(list _ (? note-up?) note _)
@@ -134,8 +134,8 @@
 (define (group-chords notes)
   (map (lambda (l) (sort (map cdr l) <))
        (group-by car notes
-		 (lambda (a b)
-		   (<= (abs (- b a)) chord-time)))))
+                 (lambda (a b)
+                   (<= (abs (- b a)) chord-time)))))
 
 ;;; Get the current time in seconds, but get return a flonum that
 ;;; represents time less than a second.

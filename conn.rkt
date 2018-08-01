@@ -5,7 +5,8 @@
 (require db)
 
 (provide conn
-         with-database)
+         with-database
+         query1)
 
 ;;; The database connection.
 (define conn (make-parameter #f))
@@ -22,3 +23,8 @@
     (lambda ()
       (disconnect db))))
 
+;;; A query that expects a single row of a single value.
+(define (query1 query . args)
+  (match (apply query-row (conn) query args)
+    [(vector result) result]
+    [else (error "Invalid SQL result")]))
