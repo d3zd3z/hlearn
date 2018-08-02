@@ -74,7 +74,7 @@
                    [(4) 2.2]
                    [else (error "Invalid factor: " factor)]))
   (define now (current-db-time))
-  (define fudge (+ (* (random) 0.5) 0.25))
+  (define fudge (+ (* (random) 0.5) 0.75))
   (define interval (max (* (problem-interval prob) adjust fudge) 5.0))
   (define next (+ now interval))
 
