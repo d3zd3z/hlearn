@@ -33,7 +33,7 @@
          (if (positive? distance)
            (begin
              (printf "You made ~a errors~%" distance)
-             (printf "~a\n~a\n" played answer)
+             ;; (printf "~a\n~a\n" played answer)
              (update prob 1)
              (play-correct answer))
            (begin
