@@ -78,11 +78,17 @@
   (define interval (max (* (problem-interval prob) adjust fudge) 5.0))
   (define next (+ now interval))
 
-  (query-exec (conn)
-              "INSERT OR REPLACE INTO learning VALUES (?, ?, ?)"
-              (problem-id prob)
-              next
-              interval))
+  (call-with-transaction
+    (conn)
+    (lambda ()
+      (query-exec (conn)
+                  "INSERT OR REPLACE INTO learning VALUES (?, ?, ?)"
+                  (problem-id prob)
+                  next
+                  interval)
+      (query-exec (conn)
+                  "INSERT INTO log VALUES (?, ?, ?)"
+                  now factor (problem-id prob)))))
 
 ;;; Time in the database is a floating point number of seconds since 1970.
 (define (current-db-time)
