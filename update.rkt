@@ -48,7 +48,17 @@
                 prob))))
   (printf "~a problems unaccounted for in DB~%" (hash-count db-map))
   (printf "Need to add ~a problems~%" (length to-add))
-  )
+  (add-exercises to-add))
+
+(define (add-exercises to-add)
+  (call-with-transaction
+    (conn)
+    (lambda ()
+      (for ([ex (in-list to-add)])
+        (query-exec (conn)
+                    "INSERT INTO PROBS (question, answer) VALUES (?, ?)"
+                    (exercise-question ex)
+                    (exercise-answer ex))))))
 
 (define (check filename)
   (with-database filename

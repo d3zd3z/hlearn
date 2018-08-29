@@ -204,4 +204,8 @@
     (make-exercise #:name "whole-half"
                    #:intervals "WHWHWHWH"
                    #:hands hands-both
-                   #:style style-3-up)))
+                   #:style style-3-up)
+    (make-exercise #:name "whole-half"
+                   #:intervals "WHWHWHWH"
+                   #:hands hands-both
+                   #:style style-3-up-rev)))
