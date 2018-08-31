@@ -1,7 +1,9 @@
 #lang racket
 
 (provide with-midi-in
-         read-exercise)
+         read-exercise
+         with-midi-out
+         play-exercise)
 
 ;;; This uses the rtmidi package to retrieve a lesson.
 ;;; This library seems to group messages by packet, but I'm not sure
@@ -22,6 +24,19 @@
 
 (define close-midi-in rtmidi-close-port)
 
+;;; Open the midi out interface, and return the handle.  For now this uses a hardcoded device.
+(define (open-midi-out)
+  (define out (make-rtmidi-out))
+  (match (rtmidi-ports out)
+    [(list-rest names)
+     (printf "Midi: ~v~%" names)
+     (rtmidi-open-port out 1)]
+    [else
+      (error "Unreachable")])
+  out)
+
+(define close-midi-out rtmidi-close-port)
+
 ;;; The midi connection used in this thread.
 (define midi-in (make-parameter #f))
 
@@ -34,6 +49,32 @@
         (action)))
     (lambda ()
       (close-midi-in in))))
+
+(define midi-out (make-parameter #f))
+
+(define (with-midi-out action)
+  (define out (open-midi-out))
+  (dynamic-wind
+    void
+    (lambda ()
+      (parameterize ([midi-out out])
+        (action)))
+    (lambda ()
+      (close-midi-out out))))
+
+(define exercise-delay (make-parameter 0.3))
+
+;;; Play a midi exercise.
+(define (play-exercise chords #:delay [edelay (exercise-delay)])
+  (define out (midi-out))
+  (for ([chord (in-list chords)])
+    ;; Send the note downs.
+    ;; TODO: Capture exceptions and always send the note off.
+    (for ([note (in-list chord)])
+      (rtmidi-send-message out `(144 ,note 100)))
+    (sleep edelay)
+    (for ([note (in-list chord)])
+      (rtmidi-send-message out `(128 ,note 100)))))
 
 ;;; These two constants define how the exercise is input.  This first,
 ;;; the chord-separation value distinguishes notes that we consider
