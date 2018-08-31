@@ -2,6 +2,7 @@
 
 (require "midi.rkt"
          "conn.rkt"
+         "intervals.rkt"
          "learn.rkt"
          "scales.rkt"
          "stats.rkt"
@@ -11,9 +12,16 @@
   (with-database
     dbname
     (lambda ()
-      (with-midi-in
-        (lambda ()
-          (ask-problems))))))
+      (match (get-kind)
+        ["midi"
+         (with-midi-in
+           (lambda ()
+             (ask-problems)))]
+        ["listen"
+         (with-midi-out
+           (lambda ()
+             (ask-listening-problems)))]
+        [kind (error "Unknown kind" kind)]))))
 
 (define (ask-problems)
   (match (next-learning 2)
@@ -78,6 +86,56 @@
         [header (in-sequences (in-value "Play: ") (in-cycle (in-value "      ")))])
     (printf "~a~a\n" header (exercise-question prob)))
   (newline))
+
+;;; Same as 'ask-problems' above, but for listening exercises.
+(define (ask-listening-problems)
+  (define problems (next-learning 1))
+  (let loop ()
+    (match problems
+    [(list)
+     (display "\nNo more problems to learn\n")]
+    [(list-rest prob _)
+     (newline)
+     (define-values (q a) (decode-interval prob))
+     (print-stats (problem-interval prob))
+     (play-exercise q #:delay 0.75)
+     (display "\nInterval: ")
+     (flush-output)
+     (define user-answer (parse-user-interval (read-line)))
+     (match user-answer
+       ['done (display "\nGoodbye\n")]
+       ['again (loop)]
+       [_
+         (if (= user-answer (abs a))
+           (begin
+             (printf "Correct~%")
+             (update prob 4)
+             (ask-listening-problems))
+           (begin
+             (printf "Incorrect, should be ~a~%" (abs a))
+             (update prob 1)
+             (ask-listening-problems)))])])))
+
+(define (parse-user-interval text)
+  (match text
+    ["q" 'done]
+    ["" 'again]
+    ["-2" 1]
+    ["2" 2]
+    ["-3" 3]
+    ["3" 4]
+    ["4" 5]
+    ["+4" 6]
+    ["-5" 6]
+    ["5" 7]
+    ["+5" 8]
+    ["-6" 8]
+    ["6" 9]
+    ["+6" 10]
+    ["-7" 10]
+    ["7" 11]
+    ["8" 11]
+    [text (error "unknown interval" text)]))
 
 (module+ main
   (match (current-command-line-arguments)
