@@ -90,21 +90,22 @@
 ;;; Same as 'ask-problems' above, but for listening exercises.
 (define (ask-listening-problems)
   (define problems (next-learning 1))
-  (let loop ()
+  (let loop ([counter 0])
     (match problems
     [(list)
      (display "\nNo more problems to learn\n")]
     [(list-rest prob _)
      (newline)
      (define-values (q a) (decode-interval prob))
-     (print-stats (problem-interval prob))
+     (when (zero? counter)
+       (print-stats (problem-interval prob)))
      (play-exercise q #:delay 0.75)
      (display "\nInterval: ")
      (flush-output)
      (define user-answer (parse-user-interval (read-line)))
      (match user-answer
        ['done (display "\nGoodbye\n")]
-       ['again (loop)]
+       ['again (loop (add1 counter))]
        [_
          (if (= user-answer (abs a))
            (begin
@@ -114,6 +115,13 @@
            (begin
              (printf "Incorrect, should be ~a~%" (abs a))
              (update prob 1)
+             (printf "Listen again: ")
+             (flush-output)
+             (play-exercise q #:delay 0.75)
+             (printf "\nPress enter: ")
+             (flush-output)
+             (read-line)
+             (newline)
              (ask-listening-problems)))])])))
 
 (define (parse-user-interval text)
