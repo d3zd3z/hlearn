@@ -15,7 +15,8 @@ INSERT INTO schema_version VALUES('20170709A');
 CREATE TABLE config (key TEXT PRIMARY KEY, value TEXT NOT NULL);
 
 -- INSERT INTO config VALUES('kind','midi');
-INSERT INTO config VALUES('kind','listen');
+-- INSERT INTO config VALUES('kind','listen');
+INSERT INTO config VALUES('kind','pitches');
 
 CREATE TABLE log (stamp REAL NOT NULL,
 	score INTEGER NOT NULL,

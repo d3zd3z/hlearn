@@ -4,7 +4,8 @@
          "conn.rkt"
          "learn.rkt"
          "scales.rkt"
-         "intervals.rkt")
+         "intervals.rkt"
+         "pitch.rkt")
 
 ;;; An augmented exercise with an ID.
 (struct id-exercise exercise (id) #:transparent)
@@ -66,11 +67,13 @@
                  (lambda ()
                    (define problems (match (get-kind)
                                       ["midi" (all-exercises)]
+                                      ["pitches" (all-pitches)]
                                       ["listen" (all-intervals)]
                                       [kind (error "Unknown problem kind" kind)]))
                    (augment-exercises (read-problems) problems))))
 
 (module+ main
   ; (check "scales-today.db")
-  (check "listen.db")
+  ; (check "listen.db")
+  (check "pitches.db")
   )

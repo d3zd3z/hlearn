@@ -6,6 +6,7 @@
          "learn.rkt"
          "scales.rkt"
          "stats.rkt"
+         "note-values.rkt"
          levenshtein)
 
 (define (run dbname)
@@ -21,6 +22,10 @@
          (with-midi-out
            (lambda ()
              (ask-listening-problems)))]
+        ["pitches"
+         (with-midi-out
+           (lambda ()
+             (ask-pitches-problems)))]
         [kind (error "Unknown kind" kind)]))))
 
 (define (ask-problems)
@@ -144,6 +149,54 @@
     ["7" 11]
     ["8" 11]
     [text (error "unknown interval" text)]))
+
+;;; Same as 'ask-problems' above, but for absolute pitch exercises.
+(define (ask-pitches-problems)
+  (define problems (next-learning 1))
+  (let loop ([counter 0])
+    (match problems
+    [(list)
+     (display "\nNo more problems to learn\n")]
+    [(list-rest prob _)
+     (newline)
+     (define-values (q a) (decode-interval prob))
+     (when (zero? counter)
+       (print-stats (problem-interval prob)))
+     (play-exercise q #:delay 0.75)
+     (display "\nPitch: ")
+     (flush-output)
+     (define user-answer (parse-pitch (read-line)))
+     (match user-answer
+       ['done (display "\nGoodbye\n")]
+       ['again (loop (add1 counter))]
+       ['invalid (loop (add1 counter))]
+       [_
+         (if (= user-answer a)
+           (begin
+             (printf "Correct~%")
+             (update prob 4)
+             (ask-pitches-problems))
+           (begin
+             (printf "Incorrect, should be ~a~%" (midi-value->string a))
+             (update prob 1)
+             (printf "Listen again: ")
+             (flush-output)
+             (play-exercise q #:delay 0.75)
+             (printf "\nPress enter: ")
+             (flush-output)
+             (read-line)
+             (newline)
+             (ask-pitches-problems)))])])))
+
+(define (parse-pitch text)
+  (case text
+    [("q" "Q") 'done]
+    [("") 'again]
+    [else
+      (with-handlers ([exn:fail? (lambda (_)
+                                   (printf "Invalid pitch\n")
+                                   'invalid)])
+        (string->midi-value text))]))
 
 (module+ main
   (match (current-command-line-arguments)
